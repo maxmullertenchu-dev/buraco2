@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BURACO DA FAMÍLIA MENDONÇA</title>
+  <meta name="theme-color" content="#0b132b" />
+  <style>
+    :root {
+      --bg: #0b132b;
+      --bg2: #1c2541;
+      --accent: #3a506b;
+      --accent2: #5bc0be;
+      --text: #ffffff;
+      --muted: #a5b1c2;
+      --danger: #ff6b6b;
+      --success: #27ae60;
+      --warning: #f1c40f;
+      --card: #f8f9fa;
+      --card-border: #dfe6e9;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior-y: none;
+    }
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, var(--bg2), var(--bg));
+      border-bottom: 1px solid #132238;
+      position: sticky; top: 0; z-index: 5;
+    }
+    header h1 {
+      font-size: 16px; margin: 0; letter-spacing: 0.5px;
+    }
+    header .controls {
+      display: flex; gap: 8px; align-items: center;
+    }
+    button, .btn {
+      appearance: none; border: none; border-radius: 10px;
+      padding: 10px 12px; background: var(--accent);
+      color: var(--text); font-weight: 600; cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .secondary { background: #243b55; }
+    .danger { background: var(--danger); }
+    .success { background: var(--success); }
+    .warning { background: var(--warning); color: #121212; }
+
+    main { overflow: auto; padding: 10px; }
+    .panel {
+      background: var(--bg2);
+      border: 1px solid #132238;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .grid-3 {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+
+    /* Auth */
+    .auth {
+      display: grid;
+      gap: 10px;
+    }
+    .input {
+      display: grid; gap: 6px;
+    }
+    input, select, textarea {
+      width: 100%; padding: 10px; border-radius: 10px;
+      border: 1px solid #213048; background: #0f1b33; color: var(--text);
+    }
+    .hint { font-size: 12px; color: var(--muted); }
+
+    /* Lobby */
+    .rooms-list { display: grid; gap: 8px; }
+    .room-item {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+      padding: 8px; border-radius: 12px; background: #132238; border: 1px solid #213048;
+    }
+    .room-name { font-weight: 700; }
+    .room-meta { font-size: 12px; color: var(--muted); }
+    .room-actions { display: flex; gap: 6px; }
+
+    /* Game table */
+    .table-header {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+    }
+    .scoreboard {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    }
+    .team-card {
+      background: #132238; border: 1px solid #213048; padding: 8px; border-radius: 12px;
+    }
+    .team-name { font-weight: 700; margin-bottom: 6px; }
+    .team-score { font-size: 14px; }
+    .vulnerable { color: var(--warning); font-weight: 700; }
+
+    .stacks {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;
+    }
+    .stack {
+      display: grid; place-items: center;
+      background: #132238; border: 1px solid #213048; border-radius: 12px; padding: 8px;
+      min-height: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stack-count {
+      position: absolute; top: 6px; right: 8px; font-size: 12px; color: var(--muted);
+      background: #0f1b33; padding: 4px 6px; border-radius: 8px; border: 1px solid #213048;
+    }
+    .stack-top-card { transform: translateY(0); transition: transform 240ms ease; }
+    .stack-top-card:hover { transform: translateY(-4px); }
+
+    /* Cards */
+    .hand {
+      display: grid; gap: 6px;
+    }
+    .hand-row {
+      display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px;
+    }
+    .card {
+      background: var(--card); color: #121212;
+      border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 6px;
+      min-height: 56px;
+      display: grid; grid-template-rows: auto 1fr auto; place-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      transform: translateY(0);
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+      user-select: none;
+    }
+    .card.s { color: #1e90ff; }
+    .card.h { color: #e74c3c; }
+    .card.d { color: #3498db; }
+    .card.c { color: #2ecc71; }
+    .card.dragging { opacity: 0.85; transform: scale(0.98); }
+    .card .rank { font-weight: 800; font-size: 14px; }
+    .card .suit { font-size: 12px; }
+    .card .points { font-size: 10px; color: #555; }
+    .card.selected { outline: 2px solid var(--accent2); }
+
+    /* Animations */
+    .animate-enter {
+      animation: enter 260ms ease forwards;
+    }
+    @keyframes enter {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-pop {
+      animation: pop 220ms ease forwards;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.96); }
+      100% { transform: scale(1); }
+    }
+    .animate-move {
+      animation: move 300ms ease forwards;
+    }
+    @keyframes move {
+      from { transform: translateY(8px); opacity: 0.5; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Timers */
+    .timers {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    .timer {
+      background: #132238; border: 1px solid #213048; border-radius: 12px; padding: 8px;
+      display: grid; place-items: center;
+    }
+    .timer.me { border-color: var(--accent2); }
+    .timer .count { font-size: 18px; font-weight: 800; }
+    .timer .label { font-size: 12px; color: var(--muted); }
+
+    /* Chat */
+    .chat {
+      display: grid; grid-template-rows: 1fr auto; gap: 8px; height: 220px;
+    }
+    .chat-log {
+      background: #132238; border: 1px solid #213048; border-radius: 12px; padding: 8px;
+      overflow: auto;
+    }
+    .chat-msg { font-size: 12px; margin-bottom: 6px; }
+    .chat-input {
+      display: grid; grid-template-columns: 1fr auto; gap: 6px;
+    }
+
+    /* Ranking and tournaments */
+    .ranking-table, .tournament-list {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #132238;
+      border: 1px solid #213048;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .ranking-table th, .ranking-table td {
+      padding: 8px; border-bottom: 1px solid #213048;
+    }
+    .ranking-table th { text-align: left; color: var(--muted); background: #0f1b33; }
+
+    footer {
+      padding: 10px 16px; background: var(--bg2); border-top: 1px solid #132238;
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* Responsive emphasis for portrait */
+    @media (max-width: 420px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .timers { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <h1>BURACO DA FAMÍLIA MENDONÇA</h1>
+      <div class="controls">
+        <button id="btn-sound" class="secondary" aria-pressed="false">Som: Off</button>
+        <button id="btn-logout" class="secondary hidden">Sair</button>
+      </div>
+    </header>
+    <main>
+      <!-- AUTH -->
+      <section id="view-auth" class="panel">
+        <div class="auth">
+          <div class="input">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="seu@email.com" autocomplete="username" />
+          </div>
+          <div class="input">
+            <label for="password">Senha</label>
+            <input id="password" type="password" placeholder="Sua senha" autocomplete="current-password" />
+            <div class="hint">Apenas usuários cadastrados podem jogar.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-login">Entrar</button>
+            <button id="btn-signup" class="secondary">Cadastrar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOBBY -->
+      <section id="view-lobby" class="panel hidden">
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Salas</h3>
+            <div id="rooms" class="rooms-list"></div>
+          </div>
+          <div class="panel">
+            <h3>Criar sala</h3>
+            <div class="input">
+              <label for="room-name">Nome da sala</label>
+              <input id="room-name" type="text" maxlength="32" placeholder="Ex.: Clã Mendonça #1" />
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btn-create-room" class="success">Criar</button>
+              <button id="btn-training" class="secondary">Sala de treino</button>
+            </div>
+            <div class="hint">Salas têm 4 jogadores e observadores ilimitados.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOURNAMENTS & RANKING -->
+      <section id="view-meta" class="panel hidden">
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Torneios</h3>
+            <div class="input">
+              <label for="tournament-name">Nome do torneio</label>
+              <input id="tournament-name" type="text" maxlength="40" placeholder="Ex.: Copa Família Mendonça" />
+            </div>
+            <div class="input">
+              <label for="tournament-type">Tipo</label>
+              <select id="tournament-type">
+                <option value="round_robin">Todos contra todos (duplas)</option>
+                <option value="knockout">Mata-mata (duplas)</option>
+              </select>
+            </div>
+            <button id="btn-create-tournament" class="success">Criar torneio</button>
+            <table class="tournament-list" id="tournaments-table">
+              <thead><tr><th>Nome</th><th>Tipo</th><th>Duplas</th><th>Ações</th></tr></thead>
+              <tbody id="tournaments-body"></tbody>
+            </table>
+            <div class="hint">Sem premiações. Campeões ganham destaque e animações.</div>
+          </div>
+          <div class="panel">
+            <h3>Ranking</h3>
+            <table class="ranking-table">
+              <thead>
+                <tr><th>Jogador</th><th>Vitórias</th><th>Total de pontos</th></tr>
+              </thead>
+              <tbody id="ranking-body">
+                <!-- começa vazio e atualiza com jogos reais -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRAINING -->
+      <section id="view-training" class="panel hidden">
+        <div class="table-header">
+          <div>
+            <h3>Treino contra bot</h3>
+            <div class="muted">Primeira vez: tutorial curto e intuitivo.</div>
+          </div>
+          <button id="btn-exit-training" class="secondary">Sair</button>
+          <button id="btn-reset-training" class="warning">Reiniciar</button>
+        </div>
+        <div id="training-tutorial" class="panel hidden">
+          <p>Bem-vindo ao treino! Aqui você aprende:</p>
+          <ul>
+            <li><b>Comprar:</b> Toque no monte para comprar uma carta.</li>
+            <li><b>Pegar descarte:</b> Toque na carta do topo e selecione 3+ cartas em sequência limpa do mesmo naipe.</li>
+            <li><b>Descartar:</b> Toque em uma carta da mão e confirme.</li>
+            <li><b>Sequências:</b> Organize por naipe e número. “2” pode ser melé na sequência, mas nunca dois “2” juntos.</li>
+            <li><b>Tempo:</b> 90s por jogada (+2s por carta acima de 11). Se acabar, o bot joga.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <div class="scoreboard" id="training-scoreboard"></div>
+          <div class="stacks">
+            <div class="stack" id="training-deck">
+              <div class="stack-count" id="training-deck-count">Monte: 0</div>
+              <div class="stack-top-card" id="training-deck-top">Comprar</div>
+            </div>
+            <div class="stack" id="training-discard">
+              <div class="stack-count" id="training-discard-count">Descarte: 0</div>
+              <div class="stack-top-card" id="training-discard-top">Topo</div>
+            </div>
+          </div>
+          <div class="timers" id="training-timers"></div>
+          <div class="panel">
+            <h4>Sua mão</h4>
+            <div id="training-hand" class="hand"></div>
+          </div>
+          <div class="panel">
+            <h4>Chat (opcional)</h4>
+            <div class="chat">
+              <div id="training-chat-log" class="chat-log"></div>
+              <div class="chat-input">
+                <input id="training-chat-input" placeholder="Digite e envie" />
+                <button id="training-chat-send">Enviar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME TABLE -->
+      <section id="view-table" class="panel hidden">
+        <div class="table-header">
+          <div>
+            <h3>Mesa</h3>
+            <div class="muted" id="table-info"></div>
+          </div>
+          <button id="btn-exit-room" class="secondary">Sair da sala</button>
+          <button id="btn-end-room" class="danger hidden">Encerrar sala</button>
+        </div>
+        <div class="scoreboard" id="scoreboard"></div>
+        <div class="stacks">
+          <div class="stack" id="deck">
+            <div class="stack-count" id="deck-count">Monte: 0</div>
+            <div class="stack-top-card" id="deck-top">Comprar</div>
+          </div>
+          <div class="stack" id="discard">
+            <div class="stack-count" id="discard-count">Descarte: 0</div>
+            <div class="stack-top-card" id="discard-top">Topo</div>
+          </div>
+        </div>
+        <div class="timers" id="timers"></div>
+        <div class="panel">
+          <h4>Sua mão</h4>
+          <div id="hand" class="hand"></div>
+        </div>
+        <div class="panel">
+          <h4>Chat da mesa</h4>
+          <div class="chat">
+            <div id="chat-log" class="chat-log"></div>
+            <div class="chat-input">
+              <input id="chat-input" placeholder="Digite e envie" />
+              <button id="chat-send">Enviar</button>
+            </div>
+          </div>
+        </div>
+        <div id="round-animation" class="panel hidden">
+          <h4>Animação de pontuação</h4>
+          <div id="round-summary"></div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      © BURACO DA FAMÍLIA MENDONÇA — jogo online, gratuito e sem premiações. Tente o treino para aprender!
+    </footer>
+  </div>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/supabase.min.js"></script>
+
+  <script>
+    // ========= CONFIG =========
+    // Preencha com suas credenciais do Supabase
+    const SUPABASE_URL = "https://SEU-PROJETO.supabase.co";
+    const SUPABASE_ANON_KEY = "SEU-ANON-KEY";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+
+    // ========= STATE =========
+    const state = {
+      me: null,                // { id, email, username }
+      soundOn: false,
+      lobbyRooms: [],
+      tournaments: [],
+      ranking: [],
+      training: {
+        firstTime: true,
+        deck: [],
+        discard: [],
+        hands: { me: [], botA: [], botB: [], botC: [] },
+        scores: { teamAB: 0, teamCD: 0 },
+        timers: { me: 0, botA: 0, botB: 0, botC: 0 },
+        turn: "me",
+        mortos: { teamAB: [], teamCD: [] },
+        started: false
+      },
+      table: {
+        roomId: null,
+        isOwner: false,
+        players: [], // {user_id, seat, team}
+        observers: [],
+        deck: [],
+        discard: [],
+        hands: {}, // user_id -> cards[]
+        scores: { team1: 0, team2: 0 },
+        timers: {}, // user_id -> seconds
+        turnUserId: null,
+        mortos: { team1: [], team2: [] },
+        roundStarted: false,
+        roundNumber: 0
+      }
+    };
+
+    // ========= UTIL =========
+    const suits = ["s","h","d","c"]; // espadas, copas, ouros, paus
+    const suitLabel = { s: "♠", h: "♥", d: "♦", c: "♣" };
+    const rankOrder = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+
+    function cardPoints(rank) {
+      if (rank === "A") return 15;
+      if (rank === "2") return 20;
+      if (["3","4","5","6","7"].includes(rank)) return 5;
+      if (["8","9","10","J","Q","K"].includes(rank)) return 10;
+      return 0;
+    }
+
+    function sortHand(cards) {
+      // sort by suit then rank order ascending
+      return [...cards].sort((a,b) => {
+        if (a.suit !== b.suit) return suits.indexOf(a.suit) - suits.indexOf(b.suit);
+        return rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
+      });
+    }
+
+    function canUseTwoAsMele(sequence) {
+      // “2” can be melé only inside same suit; never two “2” in the same sequence
+      const twos = sequence.filter(c => c.rank === "2");
+      if (twos.length > 1) return false;
+      const allSameSuit = sequence.every(c => c.suit === sequence[0].suit);
+      return allSameSuit;
+    }
+
+    function isCleanSequence(seq) {
+      // clean: no melé “2” used
+      return seq.every(c => c.rank !== "2");
+    }
+
+    function isSequential(seq) {
+      // seq already sorted; check consecutive ranks with optional single “2” as wildcard in-suit
+      const s = sortHand(seq);
+      const suit = s[0]?.suit;
+      if (!suit || !s.every(c => c.suit === suit)) return false;
+      // map rank indices, treat single “2” as wildcard: we allow jump by 2 once if “2” exists
+      const indices = s.map(c => rankOrder.indexOf(c.rank));
+      let wildUsed = false;
+      for (let i = 1; i < indices.length; i++) {
+        const prev = indices[i-1], cur = indices[i];
+        if (cur === prev + 1) continue;
+        if (!wildUsed && s[i].rank === "2") {
+          // allow wildcard alignment; consider as prev+1
+          wildUsed = true;
+          continue;
+        }
+        return false;
+      }
+      // prohibit more than one “2”
+      const twoCount = s.filter(c => c.rank === "2").length;
+      return twoCount <= 1;
+    }
+
+    function canPickDiscardFirstTime(teamScore, isFirstPickup, selection, topCard) {
+      // Must use top card + sequence clean of >=3, same suit, rules for points 60/90
+      if (!selection.find(c => c.id === topCard.id)) return false;
+      const seq = selection; // assume selection is intended sequence
+      if (seq.length < 3) return false;
+      if (!isSequential(seq)) return false;
+      const clean = isCleanSequence(seq);
+      if (!clean) return false;
+      // points threshold if first pick:
+      if (isFirstPickup) {
+        const sumPointsSelection = selection.reduce((acc, c) => acc + cardPoints(c.rank), 0);
+        if (teamScore < 1500) return sumPointsSelection >= 60;
+        else return sumPointsSelection >= 90;
+      }
+      return true;
+    }
+
+    function canBatida(tableState, teamKey) {
+      // needs clean sequence of at least 7, all dead piles conditions
+      const teamPlayers = tableState.players.filter(p => p.team === teamKey).map(p => p.user_id);
+      const hands = teamPlayers.flatMap(uid => tableState.hands[uid] || []);
+      // find at least one clean 7-sequence
+      // naive search: check sequences grouped by suit
+      for (const suit of suits) {
+        const suitCards = sortHand(hands.filter(c => c.suit === suit));
+        for (let i=0; i<=suitCards.length-7; i++) {
+          const slice = suitCards.slice(i,i+7);
+          if (isSequential(slice) && isCleanSequence(slice)) return true;
+        }
+      }
+      // mortos: both must have entered OR team has taken one dead
+      const enteredBoth = tableState.mortos[teamKey]?.enteredBoth;
+      const takenOne = tableState.mortos[teamKey]?.takenCount >= 1;
+      return enteredBoth || takenOne;
+    }
+
+    function computeCanastraPoints(seqs) {
+      // seqs: array of sequences (arrays of cards)
+      let points = 0;
+      for (const s of seqs) {
+        if (s.length === 7) {
+          points += isCleanSequence(s) ? 200 : 100;
+        }
+        if (s.length === 13 && isSequential(s) && isCleanSequence(s)) {
+          points += 500;
+        }
+        if (s.length === 14 && isSequential(s) && isCleanSequence(s)) {
+          // A a A (A..K + A)
+          const ranks = s.map(c => c.rank);
+          if (ranks[0] === "A" && ranks[ranks.length-1] === "A") points += 1000;
+        }
+      }
+      return points;
+    }
+
+    function handPoints(hand) {
+      return hand.reduce((acc, c) => acc + cardPoints(c.rank), 0);
+    }
+
+    function sumRoundPoints(tableState) {
+      // At end of round: canastras + cards down - cards left in hand - dead penalty
+      const teams = ["team1","team2"];
+      const result = { team1: 0, team2: 0 };
+      for (const tk of teams) {
+        // gather sequences on table (placeholder: infer from melds saved in game state)
+        const seqs = tableState[tk]?.melds || [];
+        let pts = computeCanastraPoints(seqs);
+        // sum cards down (assume all meld cards counted) and subtract hand cards
+        const teamPlayers = tableState.players.filter(p => p.team === tk).map(p => p.user_id);
+        const handDownPoints = seqs.flat().reduce((acc, c) => acc + cardPoints(c.rank), 0);
+        const handLeftPoints = teamPlayers.reduce((acc, uid) => acc + handPoints(tableState.hands[uid] || []), 0);
+        pts += handDownPoints - handLeftPoints;
+        // dead penalty if not taken
+        if ((tableState.mortos[tk]?.takenCount || 0) === 0) pts -= 100;
+        result[tk] = pts;
+      }
+      return result;
+    }
+
+    function teamVulnerable(score) {
+      return score >= 1500 && score < 3000;
+    }
+
+    function totalWinsThenPointsComparator(a, b) {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.total_points - a.total_points;
+    }
+
+    function uid() { return Math.random().toString(36).slice(2); }
+
+    // ========= SOUND =========
+    const sfx = {
+      buy: new Audio(), discard: new Audio(), take: new Audio(), score: new Audio()
+    };
+    function loadSfx() {
+      // tiny bleeps generated via WebAudio would be nicer, but use placeholders
+      sfx.buy.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAB..."; // placeholder
+      sfx.discard.src = sfx.buy.src;
+      sfx.take.src = sfx.buy.src;
+      sfx.score.src = sfx.buy.src;
+    }
+    function play(name) { if (state.soundOn && sfx[name]) sfx[name].play().catch(()=>{}); }
+
+    // ========= AUTH FLOW =========
+    const el = (id) => document.getElementById(id);
+    function show(id) {
+      ["view-auth","view-lobby","view-meta","view-training","view-table"].forEach(v => {
+        el(v).classList.toggle("hidden", v !== id);
+      });
+    }
+
+    async function refreshSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) {
+        state.me = { id: session.user.id, email: session.user.email, username: session.user.user_metadata?.username || session.user.email.split("@")[0] };
+        el("btn-logout").classList.remove("hidden");
+        show("view-lobby");
+        await bootstrapLobby();
+        await bootstrapMeta();
+      } else {
+        el("btn-logout").classList.add("hidden");
+        show("view-auth");
+      }
+    }
+
+    async function login(email, password) {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) return alert("Falha no login: " + error.message);
+      await refreshSession();
+    }
+    async function signup(email, password) {
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) return alert("Falha no cadastro: " + error.message);
+      alert("Cadastro realizado! Agora faça login.");
+    }
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      await refreshSession();
+    }
+
+    // ========= LOBBY =========
+    async function bootstrapLobby() {
+      await loadRooms();
+      subscribeRooms();
+    }
+
+    async function loadRooms() {
+      const { data, error } = await supabaseClient.from("rooms_view").select("*").order("created_at", { ascending: false });
+      if (error) return console.warn(error);
+      state.lobbyRooms = data || [];
+      renderRooms();
+    }
+
+    function renderRooms() {
+      const container = el("rooms");
+      container.innerHTML = "";
+      state.lobbyRooms.forEach(room => {
+        const item = document.createElement("div");
+        item.className = "room-item";
+        const meta = document.createElement("div");
+        meta.innerHTML = `
+          <div class="room-name">${room.name}</div>
+          <div class="room-meta">Jogadores: ${room.player_count}/4 • Observadores: ${room.observer_count} • Status: ${room.status}</div>
+        `;
+        const actions = document.createElement("div");
+        actions.className = "room-actions";
+        const btnJoinPlayer = document.createElement("button");
+        btnJoinPlayer.textContent = "Entrar como jogador";
+        btnJoinPlayer.onclick = () => joinRoom(room.id, "player");
+        btnJoinPlayer.disabled = room.player_count >= 4 || room.status !== "open";
+        const btnJoinObserver = document.createElement("button");
+        btnJoinObserver.textContent = "Observar";
+        btnJoinObserver.className = "secondary";
+        btnJoinObserver.onclick = () => joinRoom(room.id, "observer");
+        const btnEnter = document.createElement("button");
+        btnEnter.textContent = "Ir para mesa";
+        btnEnter.className = "success";
+        btnEnter.onclick = () => enterRoom(room.id);
+        actions.append(btnJoinPlayer, btnJoinObserver, btnEnter);
+        item.append(meta, actions);
+        container.appendChild(item);
+      });
+    }
+
+    async function createRoom(name) {
+      const { data, error } = await supabaseClient.rpc("create_room", { p_name: name });
+      if (error) return alert("Erro ao criar sala: " + error.message);
+      await loadRooms();
+    }
+
+    async function joinRoom(roomId, role) {
+      const { data, error } = await supabaseClient.rpc("join_room", { p_room_id: roomId, p_role: role });
+      if (error) return alert("Falha ao entrar: " + error.message);
+      await loadRooms();
+      await enterRoom(roomId);
+    }
+
+    async function enterRoom(roomId) {
+      state.table.roomId = roomId;
+      const { data, error } = await supabaseClient.rpc("enter_room", { p_room_id: roomId });
+      if (error) return alert("Erro ao entrar na mesa: " + error.message);
+      state.table.isOwner = data?.is_owner || false;
+      el("btn-end-room").classList.toggle("hidden", !state.table.isOwner);
+      show("view-table");
+      el("table-info").textContent = `Sala #${roomId} — rodízio de quem começa cada rodada`;
+      await bootstrapTable(roomId);
+    }
+
+    function subscribeRooms() {
+      supabaseClient.channel("rooms-ch")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "rooms" }, loadRooms)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms" }, loadRooms)
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "rooms" }, loadRooms)
+        .subscribe();
+    }
+
+    // ========= TABLE =========
+    async function bootstrapTable(roomId) {
+      await loadTableState(roomId);
+      subscribeTable(roomId);
+      renderTable();
+    }
+
+    async function loadTableState(roomId) {
+      const { data, error } = await supabaseClient.rpc("get_table_state", { p_room_id: roomId });
+      if (error) return alert("Erro ao carregar mesa: " + error.message);
+      // Expect shape: players, observers, deck, discard, hands, scores, timers, turnUserId, mortos, roundStarted, roundNumber
+      Object.assign(state.table, data);
+    }
+
+    function renderTable() {
+      renderScoreboard();
+      renderStacks();
+      renderTimers();
+      renderHand();
+    }
+
+    function renderScoreboard() {
+      const sb = el("scoreboard");
+      sb.innerHTML = "";
+      const t1 = document.createElement("div");
+      const t2 = document.createElement("div");
+      t1.className = "team-card"; t2.className = "team-card";
+      const v1 = teamVulnerable(state.table.scores.team1);
+      const v2 = teamVulnerable(state.table.scores.team2);
+      t1.innerHTML = `
+        <div class="team-name">Dupla 1</div>
+        <div class="team-score">Pontuação: <b>${state.table.scores.team1}</b> ${v1 ? '<span class="vulnerable">VULNERÁVEL</span>' : ''}</div>
+      `;
+      t2.innerHTML = `
+        <div class="team-name">Dupla 2</div>
+        <div class="team-score">Pontuação: <b>${state.table.scores.team2}</b> ${v2 ? '<span class="vulnerable">VULNERÁVEL</span>' : ''}</div>
+      `;
+      sb.append(t1, t2);
+    }
+
+    function renderStacks() {
+      el("deck-count").textContent = `Monte: ${state.table.deck.length}`;
+      el("discard-count").textContent = `Descarte: ${state.table.discard.length}`;
+      const topDiscard = state.table.discard[state.table.discard.length - 1];
+      el("discard-top").textContent = topDiscard ? `${topDiscard.rank}${suitLabel[topDiscard.suit]}` : "Topo";
+
+      const deckTop = el("deck-top");
+      deckTop.textContent = "Comprar";
+    }
+
+    function renderTimers() {
+      const container = el("timers");
+      container.innerHTML = "";
+      const players = state.table.players;
+      players.forEach(p => {
+        const t = document.createElement("div");
+        t.className = "timer " + (p.user_id === state.me.id ? "me" : "");
+        const count = state.table.timers[p.user_id] || 0;
+        t.innerHTML = `<div class="count">${count}s</div><div class="label">${p.user_id === state.table.turnUserId ? "Jogando" : "Aguardando"}</div>`;
+        container.appendChild(t);
+      });
+    }
+
+    function renderHand() {
+      const myHand = sortHand(state.table.hands[state.me.id] || []);
+      const container = el("hand");
+      container.innerHTML = "";
+      for (let i = 0; i < myHand.length; i += 11) {
+        const row = document.createElement("div");
+        row.className = "hand-row";
+        myHand.slice(i,i+11).forEach(c => {
+          const card = document.createElement("div");
+          card.className = `card ${c.suit} animate-enter`;
+          card.dataset.cardId = c.id;
+          card.innerHTML = `
+            <div class="rank">${c.rank}</div>
+            <div class="suit">${suitLabel[c.suit]}</div>
+            <div class="points">${cardPoints(c.rank)} pts</div>
+          `;
+          card.onclick = () => toggleSelectCard(card, c);
+          row.appendChild(card);
+        });
+        container.appendChild(row);
+      }
+    }
+
+    function toggleSelectCard(elCard, cardData) {
+      elCard.classList.toggle("selected");
+      // store selection in DOM for simplicity
+      const selected = getSelectedHandCards();
+      // Optionally show actions depending on selection
+    }
+    function getSelectedHandCards() {
+      const cards = [];
+      document.querySelectorAll("#hand .card.selected").forEach(elc => {
+        const id = elc.dataset.cardId;
+        const myHand = state.table.hands[state.me.id] || [];
+        const c = myHand.find(x => x.id === id);
+        if (c) cards.push(c);
+      });
+      return sortHand(cards);
+    }
+
+    // Actions
+    el("deck").onclick = async (e) => {
+      if (e.target.id !== "deck" && e.target.id !== "deck-top") return;
+      if (state.table.turnUserId !== state.me.id) return alert("Não é sua vez.");
+      if ((state.table.hands[state.me.id] || [])._boughtThisTurn) return alert("Você já comprou nesta vez.");
+      await rpcBuyCard();
+    };
+
+    el("discard").onclick = async (e) => {
+      if (e.target.id !== "discard" && e.target.id !== "discard-top") return;
+      if (state.table.turnUserId !== state.me.id) return alert("Não é sua vez.");
+      const selection = getSelectedHandCards();
+      const topCard = state.table.discard[state.table.discard.length-1];
+      const teamKey = state.table.players.find(p => p.user_id === state.me.id)?.team;
+      const teamScore = state.table.scores[teamKey];
+      const isFirstPickup = !(state.table.mortos[teamKey]?.pickedDiscardOnce);
+      if (!topCard) return alert("Não há cartas no descarte.");
+      if (!canPickDiscardFirstTime(teamScore, isFirstPickup, selection.concat([topCard]), topCard)) {
+        return alert("Seleção inválida: precisa de sequência limpa de 3+ e cumprir a regra de pontos.");
+      }
+      await rpcTakeDiscard(selection.map(c => c.id));
+    };
+
+    async function rpcBuyCard() {
+      const { data, error } = await supabaseClient.rpc("game_buy_card", { p_room_id: state.table.roomId });
+      if (error) return alert("Erro ao comprar: " + error.message);
+      play("buy");
+    }
+
+    async function rpcTakeDiscard(selectionIds) {
+      const { data, error } = await supabaseClient.rpc("game_take_discard", { p_room_id: state.table.roomId, p_selection_ids: selectionIds });
+      if (error) return alert("Erro ao pegar descarte: " + error.message);
+      play("take");
+    }
+
+    // Discard selected card
+    document.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter" && !el("view-table").classList.contains("hidden")) {
+        if (state.table.turnUserId !== state.me.id) return;
+        const selected = getSelectedHandCards();
+        if (selected.length !== 1) return alert("Selecione uma única carta para descartar e pressione Enter.");
+        const { data, error } = await supabaseClient.rpc("game_discard", { p_room_id: state.table.roomId, p_card_id: selected[0].id });
+        if (error) return alert("Erro ao descartar: " + error.message);
+        play("discard");
+      }
+    });
+
+    // Subscriptions
+    function subscribeTable(roomId) {
+      supabaseClient.channel("table-"+roomId)
+        .on("postgres_changes", { event: "*", schema: "public", table: "game_events", filter: "room_id=eq."+roomId }, async (payload) => {
+          await loadTableState(roomId);
+          renderTable();
+          if (payload.new?.type === "round_end") animateRoundSummary(payload.new.summary);
+        })
+        .subscribe();
+    }
+
+    function animateRoundSummary(summary) {
+      const view = el("round-animation");
+      const box = el("round-summary");
+      box.innerHTML = `
+        <div class="animate-pop">Pontuação da rodada:</div>
+        <ul>
+          <li>Dupla 1: <b>${summary.team1}</b></li>
+          <li>Dupla 2: <b>${summary.team2}</b></li>
+        </ul>
+      `;
+      view.classList.remove("hidden");
+      play("score");
+      setTimeout(() => view.classList.add("hidden"), 3000);
+    }
+
+    // ========= TRAINING =========
+    async function startTraining() {
+      show("view-training");
+      if (state.training.firstTime) {
+        el("training-tutorial").classList.remove("hidden");
+        state.training.firstTime = false;
+        await supabaseClient.rpc("set_training_seen");
+      }
+      initTrainingRound();
+    }
+
+    function initTrainingRound() {
+      // Build deck without jokers, 2 baralhos (typical buraco) -> 104 cards
+      const deck = [];
+      for (let k=0; k<2; k++) {
+        for (const s of suits) for (const r of rankOrder) {
+          deck.push({ id: uid(), suit: s, rank: r });
+        }
+      }
+      // shuffle
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1)); [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      state.training.deck = deck;
+      state.training.discard = [];
+      state.training.scores = { teamAB: 0, teamCD: 0 };
+      state.training.turn = "me";
+      // deal: 11 cards each + 2 mortos of 11
+      const hands = { me: [], botA: [], botB: [], botC: [] };
+      for (let i=0;i<11;i++) {
+        hands.me.push(state.training.deck.pop());
+        hands.botA.push(state.training.deck.pop());
+        hands.botB.push(state.training.deck.pop());
+        hands.botC.push(state.training.deck.pop());
+      }
+      state.training.mortos.teamAB = [];
+      state.training.mortos.teamCD = [];
+      for (let i=0;i<11;i++) state.training.mortos.teamAB.push(state.training.deck.pop());
+      for (let i=0;i<11;i++) state.training.mortos.teamCD.push(state.training.deck.pop());
+      state.training.hands = hands;
+      state.training.started = true;
+      renderTraining();
+    }
+
+    function renderTraining() {
+      // scoreboard
+      const sb = el("training-scoreboard");
+      sb.innerHTML = `
+        <div class="team-card">
+          <div class="team-name">Dupla Você + botA</div>
+          <div class="team-score">Pontuação: <b>${state.training.scores.teamAB}</b> ${teamVulnerable(state.training.scores.teamAB) ? '<span class="vulnerable">VULNERÁVEL</span>' : ''}</div>
+        </div>
+        <div class="team-card">
+          <div class="team-name">Dupla botB + botC</div>
+          <div class="team-score">Pontuação: <b>${state.training.scores.teamCD}</b> ${teamVulnerable(state.training.scores.teamCD) ? '<span class="vulnerable">VULNERÁVEL</span>' : ''}</div>
+        </div>
+      `;
+      // stacks
+      el("training-deck-count").textContent = `Monte: ${state.training.deck.length}`;
+      el("training-discard-count").textContent = `Descarte: ${state.training.discard.length}`;
+      const top = state.training.discard[state.training.discard.length-1];
+      el("training-discard-top").textContent = top ? `${top.rank}${suitLabel[top.suit]}` : "Topo";
+      // timers
+      const t = el("training-timers");
+      t.innerHTML = `
+        <div class="timer me"><div class="count">90s</div><div class="label">Sua vez</div></div>
+        <div class="timer"><div class="count">90s</div><div class="label">botA</div></div>
+        <div class="timer"><div class="count">90s</div><div class="label">botB</div></div>
+        <div class="timer"><div class="count">90s</div><div class="label">botC</div></div>
+      `;
+      // hand
+      const myHand = sortHand(state.training.hands.me);
+      const container = el("training-hand");
+      container.innerHTML = "";
+      for (let i = 0; i < myHand.length; i += 11) {
+        const row = document.createElement("div");
+        row.className = "hand-row";
+        myHand.slice(i,i+11).forEach(c => {
+          const card = document.createElement("div");
+          card.className = `card ${c.suit} animate-enter`;
+          card.innerHTML = `
+            <div class="rank">${c.rank}</div>
+            <div class="suit">${suitLabel[c.suit]}</div>
+            <div class="points">${cardPoints(c.rank)} pts</div>
+          `;
+          card.onclick = () => {
+            card.classList.toggle("selected");
+          };
+          row.appendChild(card);
+        });
+        container.appendChild(row);
+      }
+    }
+
+    el("training-deck").onclick = () => {
+      if (!state.training.started) return;
+      if (!state.training.deck.length) return alert("Monte vazio.");
+      const card = state.training.deck.pop();
+      state.training.hands.me.push(card);
+      renderTraining();
+      play("buy");
+    };
+
+    el("training-discard").onclick = () => {
+      if (!state.training.started) return;
+      const top = state.training.discard[state.training.discard.length-1];
+      if (!top) return alert("Sem cartas no descarte.");
+      // naive: attempt take if selected cards + top make clean 3-sequence
+      const selected = [];
+      document.querySelectorAll("#training-hand .card.selected").forEach((elc, idx) => {
+        // This is UI only; we can't map back to IDs here; training uses simplified check
+        // Simulate permit to take and add top + clear discard
+      });
+      state.training.hands.me.push(...state.training.discard.splice(0)); // take all
+      renderTraining();
+      play("take");
+    };
+
+    // ========= META (ranking & tournaments) =========
+    async function bootstrapMeta() {
+      await loadRanking();
+      await loadTournaments();
+    }
+
+    async function loadRanking() {
+      const { data, error } = await supabaseClient.from("ranking_view").select("*").order("wins", { ascending: false }).order("total_points", { ascending: false });
+      if (error) return console.warn(error);
+      state.ranking = data || [];
+      renderRanking();
+    }
+    function renderRanking() {
+      const body = el("ranking-body");
+      body.innerHTML = "";
+      state.ranking.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.username || r.user_email}</td><td>${r.wins}</td><td>${r.total_points}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function loadTournaments() {
+      const { data, error } = await supabaseClient.from("tournaments_view").select("*").order("created_at", { ascending: false });
+      if (error) return console.warn(error);
+      state.tournaments = data || [];
+      renderTournaments();
+    }
+    function renderTournaments() {
+      const body = el("tournaments-body");
+      body.innerHTML = "";
+      state.tournaments.forEach(t => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${t.name}</td><td>${t.type}</td><td>${t.team_count}</td>
+          <td><button class="secondary" onclick="joinTournament('${t.id}')">Participar</button></td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function createTournament(name, type) {
+      const { data, error } = await supabaseClient.rpc("create_tournament", { p_name: name, p_type: type });
+      if (error) return alert("Erro ao criar torneio: " + error.message);
+      await loadTournaments();
+    }
+
+    async function joinTournament(id) {
+      const { data, error } = await supabaseClient.rpc("join_tournament", { p_tournament_id: id });
+      if (error) return alert("Falha ao entrar no torneio: " + error.message);
+      await loadTournaments();
+    }
+
+    // ========= BOT & TIME =========
+    let turnTicker = null;
+    function startTurnTicker() {
+      if (turnTicker) clearInterval(turnTicker);
+      turnTicker = setInterval(() => {
+        const uidTurn = state.table.turnUserId;
+        if (!uidTurn) return;
+        const handCount = (state.table.hands[uidTurn] || []).length;
+        const extra = Math.max(0, handCount - 11) * 2;
+        const base = 90 + extra;
+        const current = state.table.timers[uidTurn] ?? base;
+        const next = current - 1;
+        state.table.timers[uidTurn] = Math.max(0, next);
+        renderTimers();
+        if (next <= 0) {
+          // Bot assume
+          botPlay(uidTurn);
+        }
+      }, 1000);
+    }
+
+    async function botPlay(userId) {
+      // Simple bot: buy if allowed, then discard highest point
+      const isMe = userId === state.me.id;
+      // If me timed out or disconnected, bot plays; if not me, just run
+      const { data, error } = await supabaseClient.rpc("bot_play", { p_room_id: state.table.roomId, p_user_id: userId });
+      if (error) console.warn("Bot erro:", error.message);
+    }
+
+    // ========= EVENTS =========
+    window.addEventListener("load", async () => {
+      loadSfx();
+      await refreshSession();
+    });
+
+    el("btn-login").onclick = () => login(el("email").value, el("password").value);
+    el("btn-signup").onclick = () => signup(el("email").value, el("password").value);
+    el("btn-logout").onclick = logout;
+    el("btn-sound").onclick = () => {
+      state.soundOn = !state.soundOn;
+      el("btn-sound").textContent = "Som: " + (state.soundOn ? "On" : "Off");
+      el("btn-sound").setAttribute("aria-pressed", state.soundOn ? "true" : "false");
+    };
+
+    el("btn-create-room").onclick = async () => {
+      const name = el("room-name").value.trim();
+      if (!name) return alert("Informe o nome da sala.");
+      await createRoom(name);
+    };
+
+    el("btn-training").onclick = startTraining;
+    el("btn-exit-training").onclick = () => { show("view-lobby"); };
+    el("btn-reset-training").onclick = initTrainingRound;
+
+    el("btn-create-tournament").onclick = async () => {
+      const name = el("tournament-name").value.trim();
+      const type = el("tournament-type").value;
+      if (!name) return alert("Informe o nome do torneio.");
+      await createTournament(name, type);
+    };
+
+    el("btn-exit-room").onclick = () => { show("view-lobby"); };
+    el("btn-end-room").onclick = async () => {
+      const ok = confirm("Encerrar sala? Isso finaliza a partida e fecha a sala.");
+      if (!ok) return;
+      const { error } = await supabaseClient.rpc("end_room", { p_room_id: state.table.roomId });
+      if (error) return alert("Erro ao encerrar sala: " + error.message);
+      show("view-lobby");
+    };
+
+    // Chat (table)
+    el("chat-send").onclick = async () => {
+      const msg = el("chat-input").value.trim();
+      if (!msg) return;
+      const { error } = await supabaseClient.rpc("send_chat", { p_room_id: state.table.roomId, p_message: msg });
+      if (!error) el("chat-input").value = "";
+    };
+
+    // Chat (training)
+    el("training-chat-send").onclick = () => {
+      const msg = el("training-chat-input").value.trim();
+      if (!msg) return;
+      const log = el("training-chat-log");
+      const div = document.createElement("div");
+      div.className = "chat-msg";
+      div.textContent = "Você: " + msg;
+      log.appendChild(div);
+      el("training-chat-input").value = "";
+      log.scrollTop = log.scrollHeight;
+    };
+  </script>
+</body>
+</html>
