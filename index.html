@@ -421,14 +421,14 @@
     </footer>
   </div>
 
-  <!-- Supabase -->
+  <!-- Supabase deve carregar antes do seu código -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/supabase.min.js"></script>
 
   <script>
     // ========= CONFIG =========
-    // Preencha com suas credenciais do Supabase
     const SUPABASE_URL = "https://zovjaemqtpnssejzshds.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvdmphZW1xdHBuc3NlanpzaGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4NzkyNDcsImV4cCI6MjA4MzQ1NTI0N30.6MTTnNRvbCGqwNUyx0MTvIA3TEG7-rPJVXrhJxCdUO0";
+
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
@@ -490,7 +490,6 @@
     }
 
     function canUseTwoAsMele(sequence) {
-      // “2” can be melé only inside same suit; never two “2” in the same sequence
       const twos = sequence.filter(c => c.rank === "2");
       if (twos.length > 1) return false;
       const allSameSuit = sequence.every(c => c.suit === sequence[0].suit);
@@ -498,42 +497,32 @@
     }
 
     function isCleanSequence(seq) {
-      // clean: no melé “2” used
       return seq.every(c => c.rank !== "2");
     }
 
     function isSequential(seq) {
-      // seq already sorted; check consecutive ranks with optional single “2” as wildcard in-suit
       const s = sortHand(seq);
       const suit = s[0]?.suit;
       if (!suit || !s.every(c => c.suit === suit)) return false;
-      // map rank indices, treat single “2” as wildcard: we allow jump by 2 once if “2” exists
       const indices = s.map(c => rankOrder.indexOf(c.rank));
       let wildUsed = false;
       for (let i = 1; i < indices.length; i++) {
         const prev = indices[i-1], cur = indices[i];
         if (cur === prev + 1) continue;
-        if (!wildUsed && s[i].rank === "2") {
-          // allow wildcard alignment; consider as prev+1
-          wildUsed = true;
-          continue;
-        }
+        if (!wildUsed && s[i].rank === "2") { wildUsed = true; continue; }
         return false;
       }
-      // prohibit more than one “2”
       const twoCount = s.filter(c => c.rank === "2").length;
       return twoCount <= 1;
     }
 
     function canPickDiscardFirstTime(teamScore, isFirstPickup, selection, topCard) {
-      // Must use top card + sequence clean of >=3, same suit, rules for points 60/90
       if (!selection.find(c => c.id === topCard.id)) return false;
-      const seq = selection; // assume selection is intended sequence
+      const seq = selection;
       if (seq.length < 3) return false;
       if (!isSequential(seq)) return false;
       const clean = isCleanSequence(seq);
       if (!clean) return false;
-      // points threshold if first pick:
       if (isFirstPickup) {
         const sumPointsSelection = selection.reduce((acc, c) => acc + cardPoints(c.rank), 0);
         if (teamScore < 1500) return sumPointsSelection >= 60;
@@ -543,11 +532,8 @@
     }
 
     function canBatida(tableState, teamKey) {
-      // needs clean sequence of at least 7, all dead piles conditions
       const teamPlayers = tableState.players.filter(p => p.team === teamKey).map(p => p.user_id);
       const hands = teamPlayers.flatMap(uid => tableState.hands[uid] || []);
-      // find at least one clean 7-sequence
-      // naive search: check sequences grouped by suit
       for (const suit of suits) {
         const suitCards = sortHand(hands.filter(c => c.suit === suit));
         for (let i=0; i<=suitCards.length-7; i++) {
@@ -555,14 +541,12 @@
           if (isSequential(slice) && isCleanSequence(slice)) return true;
         }
       }
-      // mortos: both must have entered OR team has taken one dead
       const enteredBoth = tableState.mortos[teamKey]?.enteredBoth;
       const takenOne = tableState.mortos[teamKey]?.takenCount >= 1;
       return enteredBoth || takenOne;
     }
 
     function computeCanastraPoints(seqs) {
-      // seqs: array of sequences (arrays of cards)
       let points = 0;
       for (const s of seqs) {
         if (s.length === 7) {
@@ -572,7 +556,6 @@
           points += 500;
         }
         if (s.length === 14 && isSequential(s) && isCleanSequence(s)) {
-          // A a A (A..K + A)
           const ranks = s.map(c => c.rank);
           if (ranks[0] === "A" && ranks[ranks.length-1] === "A") points += 1000;
         }
@@ -585,19 +568,15 @@
     }
 
     function sumRoundPoints(tableState) {
-      // At end of round: canastras + cards down - cards left in hand - dead penalty
       const teams = ["team1","team2"];
       const result = { team1: 0, team2: 0 };
       for (const tk of teams) {
-        // gather sequences on table (placeholder: infer from melds saved in game state)
         const seqs = tableState[tk]?.melds || [];
         let pts = computeCanastraPoints(seqs);
-        // sum cards down (assume all meld cards counted) and subtract hand cards
         const teamPlayers = tableState.players.filter(p => p.team === tk).map(p => p.user_id);
         const handDownPoints = seqs.flat().reduce((acc, c) => acc + cardPoints(c.rank), 0);
         const handLeftPoints = teamPlayers.reduce((acc, uid) => acc + handPoints(tableState.hands[uid] || []), 0);
         pts += handDownPoints - handLeftPoints;
-        // dead penalty if not taken
         if ((tableState.mortos[tk]?.takenCount || 0) === 0) pts -= 100;
         result[tk] = pts;
       }
@@ -616,19 +595,17 @@
     function uid() { return Math.random().toString(36).slice(2); }
 
     // ========= SOUND =========
-    const sfx = {
-      buy: new Audio(), discard: new Audio(), take: new Audio(), score: new Audio()
-    };
+    const sfx = { buy: new Audio(), discard: new Audio(), take: new Audio(), score: new Audio() };
     function loadSfx() {
-      // tiny bleeps generated via WebAudio would be nicer, but use placeholders
-      sfx.buy.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAB..."; // placeholder
+      // Substitua por seus arquivos reais para som funcional
+      sfx.buy.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACAB...";
       sfx.discard.src = sfx.buy.src;
       sfx.take.src = sfx.buy.src;
       sfx.score.src = sfx.buy.src;
     }
     function play(name) { if (state.soundOn && sfx[name]) sfx[name].play().catch(()=>{}); }
 
-    // ========= AUTH FLOW =========
+    // ========= VIEW HELPERS =========
     const el = (id) => document.getElementById(id);
     function show(id) {
       ["view-auth","view-lobby","view-meta","view-training","view-table"].forEach(v => {
@@ -636,32 +613,40 @@
       });
     }
 
+    // ========= AUTH FLOW =========
     async function refreshSession() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) console.warn("Sessão erro:", error.message);
       if (session?.user) {
-        state.me = { id: session.user.id, email: session.user.email, username: session.user.user_metadata?.username || session.user.email.split("@")[0] };
+        state.me = {
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.user_metadata?.username || session.user.email.split("@")[0]
+        };
         el("btn-logout").classList.remove("hidden");
         show("view-lobby");
         await bootstrapLobby();
         await bootstrapMeta();
       } else {
+        state.me = null;
         el("btn-logout").classList.add("hidden");
         show("view-auth");
       }
     }
 
     async function login(email, password) {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) return alert("Falha no login: " + error.message);
       await refreshSession();
     }
     async function signup(email, password) {
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      const { error } = await supabaseClient.auth.signUp({ email, password });
       if (error) return alert("Falha no cadastro: " + error.message);
       alert("Cadastro realizado! Agora faça login.");
     }
     async function logout() {
-      await supabaseClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) console.warn(error.message);
       await refreshSession();
     }
 
@@ -716,7 +701,7 @@
     }
 
     async function joinRoom(roomId, role) {
-      const { data, error } = await supabaseClient.rpc("join_room", { p_room_id: roomId, p_role: role });
+      const { error } = await supabaseClient.rpc("join_room", { p_room_id: roomId, p_role: role });
       if (error) return alert("Falha ao entrar: " + error.message);
       await loadRooms();
       await enterRoom(roomId);
@@ -746,12 +731,12 @@
       await loadTableState(roomId);
       subscribeTable(roomId);
       renderTable();
+      startTurnTicker();
     }
 
     async function loadTableState(roomId) {
       const { data, error } = await supabaseClient.rpc("get_table_state", { p_room_id: roomId });
       if (error) return alert("Erro ao carregar mesa: " + error.message);
-      // Expect shape: players, observers, deck, discard, hands, scores, timers, turnUserId, mortos, roundStarted, roundNumber
       Object.assign(state.table, data);
     }
 
@@ -786,7 +771,6 @@
       el("discard-count").textContent = `Descarte: ${state.table.discard.length}`;
       const topDiscard = state.table.discard[state.table.discard.length - 1];
       el("discard-top").textContent = topDiscard ? `${topDiscard.rank}${suitLabel[topDiscard.suit]}` : "Topo";
-
       const deckTop = el("deck-top");
       deckTop.textContent = "Comprar";
     }
@@ -797,7 +781,7 @@
       const players = state.table.players;
       players.forEach(p => {
         const t = document.createElement("div");
-        t.className = "timer " + (p.user_id === state.me.id ? "me" : "");
+        t.className = "timer " + (p.user_id === state.me?.id ? "me" : "");
         const count = state.table.timers[p.user_id] || 0;
         t.innerHTML = `<div class="count">${count}s</div><div class="label">${p.user_id === state.table.turnUserId ? "Jogando" : "Aguardando"}</div>`;
         container.appendChild(t);
@@ -805,7 +789,7 @@
     }
 
     function renderHand() {
-      const myHand = sortHand(state.table.hands[state.me.id] || []);
+      const myHand = sortHand(state.table.hands[state.me?.id] || []);
       const container = el("hand");
       container.innerHTML = "";
       for (let i = 0; i < myHand.length; i += 11) {
@@ -829,9 +813,6 @@
 
     function toggleSelectCard(elCard, cardData) {
       elCard.classList.toggle("selected");
-      // store selection in DOM for simplicity
-      const selected = getSelectedHandCards();
-      // Optionally show actions depending on selection
     }
     function getSelectedHandCards() {
       const cards = [];
@@ -868,30 +849,28 @@
     };
 
     async function rpcBuyCard() {
-      const { data, error } = await supabaseClient.rpc("game_buy_card", { p_room_id: state.table.roomId });
+      const { error } = await supabaseClient.rpc("game_buy_card", { p_room_id: state.table.roomId });
       if (error) return alert("Erro ao comprar: " + error.message);
       play("buy");
     }
 
     async function rpcTakeDiscard(selectionIds) {
-      const { data, error } = await supabaseClient.rpc("game_take_discard", { p_room_id: state.table.roomId, p_selection_ids: selectionIds });
+      const { error } = await supabaseClient.rpc("game_take_discard", { p_room_id: state.table.roomId, p_selection_ids: selectionIds });
       if (error) return alert("Erro ao pegar descarte: " + error.message);
       play("take");
     }
 
-    // Discard selected card
     document.addEventListener("keydown", async (e) => {
       if (e.key === "Enter" && !el("view-table").classList.contains("hidden")) {
         if (state.table.turnUserId !== state.me.id) return;
         const selected = getSelectedHandCards();
         if (selected.length !== 1) return alert("Selecione uma única carta para descartar e pressione Enter.");
-        const { data, error } = await supabaseClient.rpc("game_discard", { p_room_id: state.table.roomId, p_card_id: selected[0].id });
+        const { error } = await supabaseClient.rpc("game_discard", { p_room_id: state.table.roomId, p_card_id: selected[0].id });
         if (error) return alert("Erro ao descartar: " + error.message);
         play("discard");
       }
     });
 
-    // Subscriptions
     function subscribeTable(roomId) {
       supabaseClient.channel("table-"+roomId)
         .on("postgres_changes", { event: "*", schema: "public", table: "game_events", filter: "room_id=eq."+roomId }, async (payload) => {
@@ -929,14 +908,12 @@
     }
 
     function initTrainingRound() {
-      // Build deck without jokers, 2 baralhos (typical buraco) -> 104 cards
       const deck = [];
       for (let k=0; k<2; k++) {
         for (const s of suits) for (const r of rankOrder) {
           deck.push({ id: uid(), suit: s, rank: r });
         }
       }
-      // shuffle
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i+1)); [deck[i], deck[j]] = [deck[j], deck[i]];
       }
@@ -944,7 +921,6 @@
       state.training.discard = [];
       state.training.scores = { teamAB: 0, teamCD: 0 };
       state.training.turn = "me";
-      // deal: 11 cards each + 2 mortos of 11
       const hands = { me: [], botA: [], botB: [], botC: [] };
       for (let i=0;i<11;i++) {
         hands.me.push(state.training.deck.pop());
@@ -962,7 +938,6 @@
     }
 
     function renderTraining() {
-      // scoreboard
       const sb = el("training-scoreboard");
       sb.innerHTML = `
         <div class="team-card">
@@ -974,12 +949,10 @@
           <div class="team-score">Pontuação: <b>${state.training.scores.teamCD}</b> ${teamVulnerable(state.training.scores.teamCD) ? '<span class="vulnerable">VULNERÁVEL</span>' : ''}</div>
         </div>
       `;
-      // stacks
       el("training-deck-count").textContent = `Monte: ${state.training.deck.length}`;
       el("training-discard-count").textContent = `Descarte: ${state.training.discard.length}`;
       const top = state.training.discard[state.training.discard.length-1];
       el("training-discard-top").textContent = top ? `${top.rank}${suitLabel[top.suit]}` : "Topo";
-      // timers
       const t = el("training-timers");
       t.innerHTML = `
         <div class="timer me"><div class="count">90s</div><div class="label">Sua vez</div></div>
@@ -987,7 +960,6 @@
         <div class="timer"><div class="count">90s</div><div class="label">botB</div></div>
         <div class="timer"><div class="count">90s</div><div class="label">botC</div></div>
       `;
-      // hand
       const myHand = sortHand(state.training.hands.me);
       const container = el("training-hand");
       container.innerHTML = "";
@@ -1024,13 +996,7 @@
       if (!state.training.started) return;
       const top = state.training.discard[state.training.discard.length-1];
       if (!top) return alert("Sem cartas no descarte.");
-      // naive: attempt take if selected cards + top make clean 3-sequence
-      const selected = [];
-      document.querySelectorAll("#training-hand .card.selected").forEach((elc, idx) => {
-        // This is UI only; we can't map back to IDs here; training uses simplified check
-        // Simulate permit to take and add top + clear discard
-      });
-      state.training.hands.me.push(...state.training.discard.splice(0)); // take all
+      state.training.hands.me.push(...state.training.discard.splice(0));
       renderTraining();
       play("take");
     };
@@ -1075,13 +1041,13 @@
     }
 
     async function createTournament(name, type) {
-      const { data, error } = await supabaseClient.rpc("create_tournament", { p_name: name, p_type: type });
+      const { error } = await supabaseClient.rpc("create_tournament", { p_name: name, p_type: type });
       if (error) return alert("Erro ao criar torneio: " + error.message);
       await loadTournaments();
     }
 
     async function joinTournament(id) {
-      const { data, error } = await supabaseClient.rpc("join_tournament", { p_tournament_id: id });
+      const { error } = await supabaseClient.rpc("join_tournament", { p_tournament_id: id });
       if (error) return alert("Falha ao entrar no torneio: " + error.message);
       await loadTournaments();
     }
@@ -1101,17 +1067,13 @@
         state.table.timers[uidTurn] = Math.max(0, next);
         renderTimers();
         if (next <= 0) {
-          // Bot assume
           botPlay(uidTurn);
         }
       }, 1000);
     }
 
     async function botPlay(userId) {
-      // Simple bot: buy if allowed, then discard highest point
-      const isMe = userId === state.me.id;
-      // If me timed out or disconnected, bot plays; if not me, just run
-      const { data, error } = await supabaseClient.rpc("bot_play", { p_room_id: state.table.roomId, p_user_id: userId });
+      const { error } = await supabaseClient.rpc("bot_play", { p_room_id: state.table.roomId, p_user_id: userId });
       if (error) console.warn("Bot erro:", error.message);
     }
 
